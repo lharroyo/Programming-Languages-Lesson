@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taller Interactivo: APIs en Acción</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a14;
+            color: #e0e0e0;
+            line-height: 1.7;
+        }
+
+        /* ── Nav ── */
+        nav {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(10, 10, 20, 0.95);
+            backdrop-filter: blur(12px);
+            padding: 14px 30px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; border-bottom: 1px solid #1e1e3a;
+        }
+        nav .logo { font-size: 1.3rem; font-weight: 700; color: #ff6b6b; }
+        nav .logo span { color: #ffd93d; }
+        nav .progress-bar {
+            flex: 1; max-width: 300px; height: 8px;
+            background: #1a1a2e; border-radius: 10px; margin: 0 20px; overflow: hidden;
+        }
+        nav .progress-fill {
+            height: 100%; width: 0%; border-radius: 10px;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77);
+            transition: width 0.5s ease;
+        }
+        nav .progress-text { color: #8888a8; font-size: 0.85rem; white-space: nowrap; }
+
+        /* ── Hero ── */
+        .hero {
+            text-align: center; padding: 120px 20px 60px;
+            background: linear-gradient(135deg, #1a0a2e 0%, #0a1628 50%, #0a2818 100%);
+        }
+        .hero h1 { font-size: 2.8rem; color: #fff; margin-bottom: 12px; }
+        .hero h1 .accent1 { color: #ff6b6b; }
+        .hero h1 .accent2 { color: #ffd93d; }
+        .hero p { font-size: 1.1rem; color: #8888a8; max-width: 600px; margin: 0 auto 25px; }
+        .hero .badge-row { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .hero .badge {
+            background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 20px;
+            padding: 6px 16px; font-size: 0.85rem; color: #a0a0c0;
+        }
+
+        /* ── Secciones ── */
+        .section {
+            max-width: 950px; margin: 0 auto; padding: 50px 20px;
+        }
+
+        .exercise-block {
+            background: #0f0f1f; border: 1px solid #1e1e3a;
+            border-radius: 16px; padding: 30px; margin: 30px 0;
+            position: relative; overflow: hidden;
+        }
+        .exercise-block::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .exercise-block.level-1::before { background: linear-gradient(90deg, #6bcb77, #4ecdc4); }
+        .exercise-block.level-2::before { background: linear-gradient(90deg, #ffd93d, #ff9a3c); }
+        .exercise-block.level-3::before { background: linear-gradient(90deg, #ff6b6b, #ee5a24); }
+        .exercise-block.level-boss::before { background: linear-gradient(90deg, #a855f7, #6366f1, #ec4899); }
+
+        .exercise-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+        }
+        .exercise-header h3 { font-size: 1.4rem; color: #fff; }
+        .difficulty {
+            padding: 4px 14px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;
+        }
+        .difficulty.easy { background: #6bcb7733; color: #6bcb77; }
+        .difficulty.medium { background: #ffd93d33; color: #ffd93d; }
+        .difficulty.hard { background: #ff6b6b33; color: #ff6b6b; }
+        .difficulty.boss { background: #a855f733; color: #a855f7; }
+
+        .exercise-desc { color: #9898b8; margin-bottom: 20px; }
+        .exercise-desc strong { color: #d0d0e8; }
+
+        /* ── Objetivo ── */
+        .objective {
+            background: #111128; border: 1px solid #2a2a5a; border-radius: 10px;
+            padding: 15px 20px; margin-bottom: 20px;
+        }
+        .objective .obj-title {
+            color: #ffd93d; font-weight: 700; font-size: 0.9rem; margin-bottom: 5px;
+        }
+        .objective p { color: #a0a0c0; font-size: 0.9rem; margin: 0; }
+
+        /* ── Controles interactivos ── */
+        .api-console {
+            background: #080812; border: 1px solid #1a1a30;
+            border-radius: 12px; overflow: hidden; margin: 15px 0;
+        }
+        .console-bar {
+            background: #0e0e1e; padding: 10px 16px;
+            display: flex; align-items: center; gap: 10px;
+            border-bottom: 1px solid #1a1a30; flex-wrap: wrap;
+        }
+        .method-badge {
+            padding: 5px 12px; border-radius: 6px; font-weight: 700;
+            font-size: 0.8rem; font-family: monospace; min-width: 60px; text-align: center;
+        }
+        .method-badge.get { background: #61afef22; color: #61afef; }
+        .method-badge.post { background: #98c37922; color: #98c379; }
+        .method-badge.put { background: #e5c07b22; color: #e5c07b; }
+        .method-badge.delete { background: #e06c7522; color: #e06c75; }
+
+        .url-input {
+            flex: 1; background: transparent; border: none; color: #c8c8e0;
+            font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+            font-size: 0.9rem; outline: none; min-width: 200px;
+        }
+        .url-display {
+            flex: 1; color: #c8c8e0;
+            font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+            font-size: 0.9rem;
+        }
+
+        .btn-send {
+            padding: 8px 20px; border-radius: 8px; border: none;
+            font-weight: 600; cursor: pointer; font-size: 0.9rem;
+            transition: all 0.3s; white-space: nowrap;
+        }
+        .btn-send.green { background: #6bcb77; color: #0a0a14; }
+        .btn-send.green:hover { background: #5ab868; }
+        .btn-send.blue { background: #61afef; color: #0a0a14; }
+        .btn-send.blue:hover { background: #4e9de0; }
+        .btn-send.orange { background: #ffd93d; color: #0a0a14; }
+        .btn-send.orange:hover { background: #eec82e; }
+        .btn-send.red { background: #ff6b6b; color: #fff; }
+        .btn-send.red:hover { background: #e05555; }
+        .btn-send.purple { background: #a855f7; color: #fff; }
+        .btn-send.purple:hover { background: #9340e0; }
+        .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .console-body { padding: 16px; min-height: 80px; position: relative; }
+
+        .response-area {
+            font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+            font-size: 0.85rem; color: #a8a8c8; white-space: pre-wrap;
+            word-break: break-word; max-height: 350px; overflow-y: auto;
+        }
+        .response-area::-webkit-scrollbar { width: 6px; }
+        .response-area::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+
+        .status-line {
+            display: flex; gap: 15px; margin-bottom: 10px; padding-bottom: 10px;
+            border-bottom: 1px solid #1a1a30; flex-wrap: wrap; font-size: 0.85rem;
+        }
+        .status-line .status-code { font-weight: 700; }
+        .status-line .status-code.s2xx { color: #6bcb77; }
+        .status-line .status-code.s4xx { color: #ff6b6b; }
+        .status-line .status-code.s5xx { color: #c678dd; }
+        .status-line .time { color: #5a5a7a; }
+
+        .loading {
+            display: flex; align-items: center; gap: 10px; color: #5a5a7a;
+        }
+        .loading .spinner {
+            width: 18px; height: 18px; border: 2px solid #2a2a4a;
+            border-top-color: #7c5cfc; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .placeholder-text { color: #3a3a5a; font-style: italic; }
+
+        /* ── Inputs de formulario ── */
+        .form-group { margin: 12px 0; }
+        .form-group label {
+            display: block; color: #8888a8; font-size: 0.85rem;
+            margin-bottom: 5px; font-weight: 600;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px 14px; background: #0a0a18;
+            border: 1px solid #2a2a4a; border-radius: 8px; color: #c8c8e0;
+            font-family: 'Segoe UI', sans-serif; font-size: 0.9rem;
+            transition: border-color 0.3s; outline: none;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #7c5cfc;
+        }
+        .form-group textarea {
+            font-family: 'Cascadia Code', Consolas, monospace;
+            min-height: 80px; resize: vertical;
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* ── Preguntas / Verificación ── */
+        .question-block {
+            background: #0e0e22; border: 1px solid #2a2a4a;
+            border-radius: 10px; padding: 20px; margin: 15px 0;
+        }
+        .question-block p { color: #c0c0d8; font-weight: 600; margin-bottom: 10px; }
+        .question-block .options label {
+            display: block; padding: 10px 15px; margin: 5px 0;
+            background: #0a0a18; border: 1px solid #1e1e3a; border-radius: 8px;
+            cursor: pointer; transition: all 0.3s; color: #a0a0c0; font-size: 0.9rem;
+        }
+        .question-block .options label:hover {
+            border-color: #7c5cfc; background: #12122a;
+        }
+        .question-block input[type="radio"] { margin-right: 10px; accent-color: #7c5cfc; }
+        .question-block input[type="text"] {
+            width: 100%; padding: 10px; background: #0a0a18;
+            border: 1px solid #2a2a4a; border-radius: 8px; color: #c8c8e0;
+            font-family: monospace; outline: none;
+        }
+        .question-block input[type="text"]:focus { border-color: #7c5cfc; }
+
+        .btn-verify {
+            padding: 8px 20px; background: #7c5cfc; color: #fff;
+            border: none; border-radius: 8px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600; margin-top: 10px;
+            transition: background 0.3s;
+        }
+        .btn-verify:hover { background: #6a4ae0; }
+
+        .feedback {
+            margin-top: 10px; padding: 10px 15px; border-radius: 8px;
+            font-size: 0.9rem; display: none;
+        }
+        .feedback.correct { display: block; background: #0a2a0a; color: #6bcb77; border: 1px solid #1a4a1a; }
+        .feedback.incorrect { display: block; background: #2a0a0a; color: #ff6b6b; border: 1px solid #4a1a1a; }
+
+        /* ── Hint toggle ── */
+        .hint-toggle {
+            color: #5a5a8a; cursor: pointer; font-size: 0.85rem;
+            margin-top: 10px; display: inline-block; transition: color 0.3s;
+        }
+        .hint-toggle:hover { color: #7c5cfc; }
+        .hint-content {
+            display: none; background: #10102a; border: 1px dashed #2a2a5a;
+            border-radius: 8px; padding: 12px 16px; margin-top: 8px;
+            color: #7878a0; font-size: 0.85rem;
+        }
+        .hint-content.show { display: block; }
+
+        /* ── Sección de título ── */
+        .section-title {
+            display: flex; align-items: center; gap: 15px;
+            margin-bottom: 10px;
+        }
+        .section-title .number {
+            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-size: 3rem; font-weight: 800; line-height: 1;
+        }
+        .section-title h2 { font-size: 1.8rem; color: #fff; }
+        .section-subtitle { color: #6868a0; margin-bottom: 30px; }
+
+        /* ── Tarjetas de info ── */
+        .info-card {
+            background: #0f0f22; border: 1px solid #1e1e3a;
+            border-radius: 10px; padding: 18px; margin: 15px 0;
+        }
+        .info-card h4 { color: #ffd93d; margin-bottom: 8px; }
+        .info-card p { color: #8888a8; font-size: 0.9rem; margin: 0; }
+        .info-card code {
+            background: #1a1a30; padding: 2px 6px; border-radius: 4px;
+            color: #c8c8e0; font-size: 0.85rem;
+        }
+
+        /* ── Completado ── */
+        .exercise-complete {
+            display: none; text-align: center; padding: 20px;
+            background: #0a2a0a; border: 1px solid #1a4a1a;
+            border-radius: 10px; margin-top: 15px;
+        }
+        .exercise-complete.show { display: block; }
+        .exercise-complete .check { font-size: 2rem; }
+        .exercise-complete p { color: #6bcb77; font-weight: 600; }
+
+        /* ── Tabs ── */
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 8px 18px; background: #0a0a18; border: 1px solid #1e1e3a;
+            border-radius: 8px 8px 0 0; color: #6868a0; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.3s; border-bottom: none;
+        }
+        .tab-btn.active { background: #0e0e22; color: #fff; border-color: #3a3a6a; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ── Scoreboard ── */
+        .scoreboard {
+            position: fixed; bottom: 20px; right: 20px;
+            background: rgba(15, 15, 30, 0.95); backdrop-filter: blur(10px);
+            border: 1px solid #2a2a4a; border-radius: 12px;
+            padding: 15px 20px; z-index: 100; min-width: 180px;
+        }
+        .scoreboard h4 { color: #ffd93d; font-size: 0.85rem; margin-bottom: 8px; }
+        .scoreboard .score { font-size: 1.8rem; font-weight: 800; color: #fff; }
+        .scoreboard .score span { color: #5a5a7a; font-size: 1rem; }
+        .scoreboard .xp-bar {
+            height: 6px; background: #1a1a2e; border-radius: 3px; margin-top: 8px; overflow: hidden;
+        }
+        .scoreboard .xp-fill {
+            height: 100%; border-radius: 3px; transition: width 0.5s;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77);
+        }
+
+        /* ── Footer ── */
+        footer {
+            text-align: center; padding: 40px 20px;
+            border-top: 1px solid #1e1e3a; color: #3a3a5a; font-size: 0.85rem;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.8rem; }
+            .form-row { grid-template-columns: 1fr; }
+            .scoreboard { bottom: 10px; right: 10px; padding: 10px 14px; min-width: 140px; }
+            .scoreboard .score { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════ Nav ═══════ -->
+<nav>
+    <div class="logo">🧪 Taller <span>APIs</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">0 / 7 ejercicios</div>
+</nav>
+
+<!-- ═══════ Hero ═══════ -->
+<div class="hero">
+    <h1>Taller <span class="accent1">Interactivo</span> de <span class="accent2">APIs</span></h1>
+    <p>Aprende haciendo: realiza llamadas reales a APIs públicas, analiza respuestas y construye tu conocimiento paso a paso.</p>
+    <div class="badge-row">
+        <span class="badge">🟢 7 Ejercicios</span>
+        <span class="badge">🌐 APIs Reales</span>
+        <span class="badge">⚡ Sin instalación</span>
+        <span class="badge">🏆 Sistema de puntos</span>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════ EJERCICIO 1: Tu primera llamada ═══════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="section">
+    <div class="section-title">
+        <div class="number">01</div>
+        <h2>Tu Primera Llamada a una API</h2>
+    </div>
+    <p class="section-subtitle">Comencemos con lo básico: hacer un GET request y ver qué devuelve el servidor.</p>
+
+    <div class="exercise-block level-1">
+        <div class="exercise-header">
+            <h3>🟢 Ejercicio 1: Hello API!</h3>
+            <span class="difficulty easy">Fácil · 10 pts</span>
+        </div>
+
+        <div class="objective">
+            <div class="obj-title">🎯 Objetivo</div>
+            <p>Haz clic en <strong>"Enviar Request"</strong> para hacer tu primera llamada GET a una API pública y observa la respuesta JSON que devuelve el servidor.</p>
+        </div>
+
+        <div class="api-console">
+            <div class="console-bar">
+                <span class="method-badge get">GET</span>
+                <span class="url-display">https://jsonplaceholder.typicode.com/users/1</span>
+                <button class="btn-send green" onclick="ejercicio1()">Enviar Request ▶</button>
+            </div>
+            <div class="console-body">
+                <div class="response-area" id="res1">
+                    <span class="placeholder-text">La respuesta aparecerá aquí...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="question-block" id="q1-block" style="display:none;">
+            <p>📝 Pregunta: ¿Cuál es el nombre del usuario que devolvió la API?</p>
+            <input type="text" id="q1-answer" placeholder="Escribe el nombre completo...">
+            <button class="btn-verify" onclick="verificar1()">Verificar</button>
+            <div class="feedback" id="q1-feedback"></div>
+        </div>
+
+        <div class="exercise-complete" id="complete1">
+            <div class="check">✅</div>
+            <p>¡Excelente! Hiciste tu primera llamada a una API.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════ EJERCICIO 2: Explorando endpoints ═════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="section">
+    <div class="section-title">
+        <div class="number">02</div>
+        <h2>Explorando Endpoints</h2>
+    </div>
+    <p class="section-subtitle">Un endpoint es una URL específica que expone un recurso de la API.</p>
+
+    <div class="exercise-block level-1">
+        <div class="exercise-header">
+            <h3>🟢 Ejercicio 2: Cambia el Endpoint</h3>
+            <span class="difficulty easy">Fácil · 15 pts</span>
+        </div>
+
+        <div class="objective">
+            <div class="obj-title">🎯 Objetivo</div>
+            <p>Selecciona diferentes endpoints y observa cómo cambian los datos que devuelve la API. Cada endpoint expone un <strong>recurso diferente</strong>.</p>
+        </div>
+
+        <div class="info-card">
+            <h4>📚 Endpoints disponibles en JSONPlaceholder:</h4>
+            <p>
+                <code>/users</code> → Lista de usuarios &nbsp;|&nbsp;
+                <code>/posts</code> → Publicaciones &nbsp;|&nbsp;
+                <code>/comments</code> → Comentarios &nbsp;|&nbsp;
+                <code>/todos</code> → Tareas pendientes &nbsp;|&nbsp;
+                <code>/photos</code> → Fotos
+            </p>
+        </div>
+
+        <div class="api-console">
+            <div class="console-bar">
+                <span class="method-badge get">GET</span>
+                <select id="endpoint2" style="flex:1; background:#0a0a18; border:1px solid #2a2a4a; color:#c8c8e0; padding:8px; border-radius:6px; font-family:monospace; font-size:0.9rem;">
+                    <option value="users">https://jsonplaceholder.typicode.com/users</option>
+                    <option value="posts/1">https://jsonplaceholder.typicode.com/posts/1</option>
+                    <option value="comments?postId=1">https://jsonplaceholder.typicode.com/comments?postId=1</option>
+                    <option value="todos/1">https://jsonplaceholder.typicode.com/todos/1</option>
+                    <option value="photos/1">https://jsonplaceholder.typicode.com/photos/1</option>
+                </select>
+                <button class="btn-send blue" onclick="ejercicio2()">Enviar ▶</button>
+            </div>
+            <div class="console-body">
+                <div class="response-area" id="res2">
+                    <span class="placeholder-text">Selecciona un endpoint y envía el request...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="question-block" id="q2-block" style="display:none;">
+            <p>📝 ¿Qué diferencia hay entre <code>/users</code> y <code>/posts/1</code>?</p>
+            <div class="options">
+                <label><input type="radio" name="q2" value="a"> Ambos devuelven lo mismo</label>
+                <label><input type="radio" name="q2" value="b"> /users devuelve una lista (array), /posts/1 devuelve un solo objeto</label>
+                <label><input type="radio" name="q2" value="c"> /posts/1 devuelve más datos que /users</label>
+            </div>
+            <button class="btn-verify" onclick="verificar2()">Verificar</button>
+            <div class="feedback" id="q2-feedback"></div>
+        </div>
+
+        <div class="exercise-complete" id="complete2">
+            <div class="check">✅</div>
+            <p>¡Perfecto! Ya entiendes cómo funcionan los endpoints.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════ EJERCICIO 3: Query Parameters ═════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="section">
+    <div class="section-title">
+        <div class="number">03</div>
+        <h2>Filtrando con Query Parameters</h2>
+    </div>
+    <p class="section-subtitle">Los query parameters (<code>?key=value</code>) te permiten filtrar y personalizar los resultados.</p>
+
+    <div class="exercise-block level-2">
+        <div class="exercise-header">
+            <h3>🟡 Ejercicio 3: Construye tu URL</h3>
+            <span class="difficulty medium">Medio · 20 pts</span>
+        </div>
+
+        <div class="objective">
+            <div class="obj-title">🎯 Objetivo</div>
+            <p>Usa los controles para construir una URL con query parameters y filtra los posts de un usuario específico.</p>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Recurso:</label>
+                <select id="resource3" onchange="buildUrl3()">
+                    <option value="posts">posts</option>
+                    <option value="comments">comments</option>
+                    <option value="todos">todos</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Filtrar por userId:</label>
+                <select id="filter3" onchange="buildUrl3()">
+                    <option value="">Sin filtro</option>
+                    <option value="1">userId=1</option>
+                    <option value="2">userId=2</option>
+                    <option value="3">userId=3</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="api-console">
+            <div class="console-bar">
+                <span class="method-badge get">GET</span>
+                <span class="url-display" id="url3">https://jsonplaceholder.typicode.com/posts</span>
+                <button class="btn-send blue" onclick="ejercicio3()">Enviar ▶</button>
+            </div>
+            <div class="console-body">
+                <div class="response-area" id="res3">
+                    <span class="placeholder-text">Construye tu URL y envía...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="question-block" id="q3-block" style="display:none;">
+            <p>📝 ¿Cuántos posts tiene el userId=1? (Filtra y cuenta los resultados)</p>
+            <input type="text" id="q3-answer" placeholder="Escribe el número...">
+            <button class="btn-verify" onclick="verificar3()">Verificar</button>
+            <div class="feedback" id="q3-feedback"></div>
+        </div>
+
+        <span class="hint-toggle" onclick="toggleHint('hint3')">💡 ¿Necesitas una pista?</span>
+        <div class="hint-content" id="hint3">
+            Selecciona "posts" como recurso y "userId=1" como filtro. Fíjate en cuántos elementos tiene el array de respuesta (cuenta los objetos <code>{ }</code>).
+        </div>
+
+        <div class="exercise-complete" id="complete3">
+            <div class="check">✅</div>
+            <p>¡Genial! Dominas los query parameters.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════ EJERCICIO 4: Método POST ══════════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="section">
+    <div class="section-title">
+        <div class="number">04</div>
+        <h2>Creando Datos con POST</h2>
+    </div>
+    <p class="section-subtitle">El método POST envía datos al servidor para crear un nuevo recurso.</p>
+
+    <div class="exercise-block level-2">
+        <div class="exercise-header">
+            <h3>🟡 Ejercicio 4: Tu Primer POST</h3>
+            <span class="difficulty medium">Medio · 25 pts</span>
+        </div>
+
+        <div class="objective">
+            <div class="obj-title">🎯 Objetivo</div>
+            <p>Llena el formulario con datos y envíalos a la API usando el método <strong>POST</strong>. Observa cómo el servidor responde con el recurso creado y un nuevo <code>id</code>.</p>
+        </div>
+
+        <div class="form-group">
+            <label>Título del post:</label>
+            <input type="text" id="post-title" placeholder="Ej: Mi primer post vía API">
+        </div>
+        <div class="form-group">
+            <label>Contenido (body):</label>
+            <textarea id="post-body" placeholder="Escribe el contenido del post..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>User ID (autor):</label>
+            <input type="number" id="post-userid" placeholder="Ej: 1" min="1" max="10">
+        </div>
+
+        <div class="api-console">
+            <div class="console-bar">
+                <span class="method-badge post">POST</span>
+                <span class="url-display">https://jsonplaceholder.typicode.com/posts</span>
+                <button class="btn-send green" onclick="ejercicio4()">Crear Post ▶</button>
+            </div>
+            <div class="console-body">
+                <div class="response-area" id="res4">
+                    <span class="placeholder-text">Llena el formulario y haz clic en "Crear Post"...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="question-block" id="q4-block" style="display:none;">
+            <p>📝 ¿Qué código de estado HTTP devolvió el servidor al crear el recurso?</p>
+            <div class="options">
+                <label><input type="radio" name="q4" value="a"> 200 OK</label>
+                <label><input type="radio" name="q4" value="b"> 201 Created</label>
+                <label><input type="radio" name="q4" value="c"> 204 No Content</label>
+            </div>
+            <button class="btn-verify" onclick="verificar4()">Verificar</button>
+            <div class="feedback" id="q4-feedback"></div>
+        </div>
+
+        <div class="exercise-complete" id="complete4">
+            <div class="check">✅</div>
+            <p>¡Creaste un recurso con POST! El servidor responde con 201 Created.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════ EJERCICIO 5: PUT y DELETE ═════════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="section">
+    <div class="section-title">
+        <div class="number">05</div>
+        <h2>Actualizar y Eliminar (PUT & DELETE)</h2>
+    </div>
+    <p class="section-subtitle">Completa el CRUD: modifica y elimina recursos existentes.</p>
+
+    <div class="exercise-block level-3">
+        <div class="exercise-header">
+            <h3>🔴 Ejercicio 5: CRUD Completo</h3>
+            <span class="difficulty hard">Difícil · 30 pts</span>
+        </div>
+
+        <div class="objective">
+            <div class="obj-title">🎯 Objetivo</div>
+            <p>Primero <strong>actualiza</strong> el post #1 con PUT, luego <strong>elimínalo</strong> con DELETE. Observa las diferencias en las respuestas.</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(5, 'put')">PUT (Actualizar)</button>
+            <button class="tab-btn" onclick="switchTab(5, 'delete')">DELETE (Eliminar)</button>
+        </div>
+
+        <div class="tab-content active" id="tab5-put">
+            <div class="form-group">
+                <label>Nuevo título para post #1:</label>
+                <input type="text" id="put-title" placeholder="Ej: Título actualizado">
+            </div>
+            <div class="api-console">
+                <div class="console-bar">
+                    <span class="method-badge put">PUT</span>
+                    <span class="url-display">https://jsonplaceholder.typicode.com/posts/1</span>
+                    <button class="btn-send orange" onclick="ejercicio5put()">Actualizar ▶</button>
+                </div>
+                <div class="console-body">
+                    <div class="response-area" id="res5put">
+                        <span class="placeholder-text">Escribe un nuevo título y actualiza...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab5-delete">
+            <div class="info-card">
+                <h4>⚠️ Cuidado con DELETE</h4>
+                <p>En una API real, DELETE borra el recurso permanentemente. JSONPlaceholder solo simula la eliminación.</p>
+            </div>
+            <div class="api-console">
+                <div class="console-bar">
+                    <span class="method-badge delete">DELETE</span>
+                    <span class="url-display">https://jsonplaceholder.typicode.com/posts/1</span>
+                    <button class="btn-send red" onclick="ejercicio5delete()">Eliminar ▶</button>
+                </div>
+                <div class="console-body">
+                    <div class="response-area" id="res5del">
+                        <span class="placeholder-text">Haz clic para eliminar el post #1...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="question-block" id="q5-block" style="display:none;">
+            <p>📝 ¿Cuál es la diferencia principal entre las respuestas de PUT y DELETE?</p>
+            <div class="options">
+                <label><input type="radio" name="q5" value="a"> PUT devuelve el objeto actualizado, DELETE devuelve un objeto vacío</label>
+                <label><input type="radio" name="q5" value="b"> Ambos devuelven lo mismo</label>
+                <label><input type="radio" name="q5" value="c"> DELETE devuelve un error</label>
+            </div>
+            <button class="btn-verify" onclick="verificar5()">Verificar</button>
+            <div class="feedback" id="q5-feedback"></div>
+        </div>
+
+        <div class="exercise-complete" id="complete5">
+            <div class="check">✅</div>
+            <p>¡Completaste el CRUD! Ya dominas GET, POST, PUT y DELETE.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════ EJERCICIO 6: Status Codes ═════════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="section">
+    <div class="section-title">
+        <div class="number">06</div>
+        <h2>Descifrando Status Codes</h2>
+    </div>
+    <p class="section-subtitle">Aprende a interpretar los códigos de estado provocando errores intencionales.</p>
+
+    <div class="exercise-block level-3">
+        <div class="exercise-header">
+            <h3>🔴 Ejercicio 6: Provoca Errores</h3>
+            <span class="difficulty hard">Difícil · 30 pts</span>
+        </div>
+
+        <div class="objective">
+            <div class="obj-title">🎯 Objetivo</div>
+            <p>Haz requests a URLs inválidas y observa los diferentes <strong>códigos de error</strong>. Relaciona cada status code con su significado.</p>
+        </div>
+
+        <div class="api-console">
+            <div class="console-bar">
+                <span class="method-badge get">GET</span>
+                <select id="error-url" style="flex:1; background:#0a0a18; border:1px solid #2a2a4a; color:#c8c8e0; padding:8px; border-radius:6px; font-family:monospace; font-size:0.85rem;">
+                    <option value="ok">✅ /users/1 (URL válida)</option>
+                    <option value="notfound">❌ /users/99999 (recurso inexistente)</option>
+                    <option value="invalid">❌ https://httpstat.us/400 (Bad Request)</option>
+                    <option value="unauth">❌ https://httpstat.us/401 (Unauthorized)</option>
+                    <option value="server">❌ https://httpstat.us/500 (Server Error)</option>
+                </select>
+                <button class="btn-send blue" onclick="ejercicio6()">Probar ▶</button>
+            </div>
+            <div class="console-body">
+                <div class="response-area" id="res6">
+                    <span class="placeholder-text">Selecciona una URL y observa el resultado...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="question-block" id="q6-block" style="display:none;">
+            <p>📝 Relaciona: Un código <strong>4xx</strong> significa que el error es de...</p>
+            <div class="options">
+                <label><input type="radio" name="q6" value="a"> El servidor</label>
+                <label><input type="radio" name="q6" value="b"> El cliente (quien hizo el request)</label>
+                <label><input type="radio" name="q6" value="c"> La red/internet</label>
+            </div>
+            <button class="btn-verify" onclick="verificar6()">Verificar</button>
+            <div class="feedback" id="q6-feedback"></div>
+        </div>
+
+        <div class="exercise-complete" id="complete6">
+            <div class="check">✅</div>
+            <p>¡Ahora sabes interpretar los códigos de estado HTTP!</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════ EJERCICIO 7: Boss Final ═══════════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="section">
+    <div class="section-title">
+        <div class="number">07</div>
+        <h2>Desafío Final: API Explorer</h2>
+    </div>
+    <p class="section-subtitle">Construye tu propio request desde cero. Demuestra todo lo aprendido.</p>
+
+    <div class="exercise-block level-boss">
+        <div class="exercise-header">
+            <h3>👾 Ejercicio Final: Libre Exploración</h3>
+            <span class="difficulty boss">Boss · 50 pts</span>
+        </div>
+
+        <div class="objective">
+            <div class="obj-title">🎯 Objetivo</div>
+            <p>Usa la consola libre para hacer requests a <strong>cualquier API pública</strong>. Escribe la URL, elige el método y experimenta. Completa las 3 misiones de abajo.</p>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Método HTTP:</label>
+                <select id="boss-method">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>URL del endpoint:</label>
+                <input type="text" id="boss-url" placeholder="https://jsonplaceholder.typicode.com/..." value="https://jsonplaceholder.typicode.com/">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Body (JSON) — solo para POST/PUT:</label>
+            <textarea id="boss-body" placeholder='{"title": "test", "body": "contenido", "userId": 1}'></textarea>
+        </div>
+
+        <div class="api-console">
+            <div class="console-bar">
+                <span class="method-badge get" id="boss-badge">GET</span>
+                <span class="url-display" id="boss-url-display">https://jsonplaceholder.typicode.com/</span>
+                <button class="btn-send purple" onclick="ejercicioBoss()">Ejecutar ▶</button>
+            </div>
+            <div class="console-body">
+                <div class="response-area" id="resBoss">
+                    <span class="placeholder-text">Tu consola API personal. ¡Experimenta!</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <h4>🏆 Misiones para completar:</h4>
+            <p id="mission1" style="margin-top:8px;">1️⃣ Obtén la lista de todos los posts (GET) <span id="m1" style="color:#3a3a5a;">⬜</span></p>
+            <p>2️⃣ Crea un nuevo comentario usando POST <span id="m2" style="color:#3a3a5a;">⬜</span></p>
+            <p>3️⃣ Actualiza el todo #1 con PUT <span id="m3" style="color:#3a3a5a;">⬜</span></p>
+        </div>
+
+        <div class="exercise-complete" id="completeBoss">
+            <div class="check">🏆</div>
+            <p>¡FELICIDADES! Completaste todos los ejercicios del taller.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════ Scoreboard ═══════ -->
+<div class="scoreboard">
+    <h4>🏆 Puntuación</h4>
+    <div class="score" id="scoreDisplay">0 <span>/ 180</span></div>
+    <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+</div>
+
+<!-- ═══════ Footer ═══════ -->
+<footer>
+    <p>Taller de Arquitectura de Software — APIs Interactivas</p>
+    <p style="margin-top:8px;">Todos los requests se hacen a APIs públicas gratuitas 📡</p>
+</footer>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════ JAVASCRIPT ════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<script>
+    // ── Estado global ──
+    let score = 0;
+    const maxScore = 180;
+    let completed = { e1:false, e2:false, e3:false, e4:false, e5:false, e6:false, eBoss:false };
+    let e2calls = 0;
+    let e5did = { put:false, del:false };
+    let e6calls = 0;
+    let bossMissions = { m1:false, m2:false, m3:false };
+
+    function addScore(pts) {
+        score += pts;
+        document.getElementById('scoreDisplay').innerHTML = `${score} <span>/ ${maxScore}</span>`;
+        document.getElementById('xpFill').style.width = `${(score/maxScore)*100}%`;
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const done = Object.values(completed).filter(v=>v).length;
+        document.getElementById('progressFill').style.width = `${(done/7)*100}%`;
+        document.getElementById('progressText').textContent = `${done} / 7 ejercicios`;
+    }
+
+    function showLoading(id) {
+        document.getElementById(id).innerHTML = '<div class="loading"><div class="spinner"></div> Enviando request...</div>';
+    }
+
+    function formatJson(data) {
+        return JSON.stringify(data, null, 2);
+    }
+
+    function statusClass(code) {
+        if (code >= 200 && code < 300) return 's2xx';
+        if (code >= 400 && code < 500) return 's4xx';
+        return 's5xx';
+    }
+
+    function showResponse(id, status, time, data) {
+        const html = `<div class="status-line">
+            <span class="status-code ${statusClass(status)}">Status: ${status}</span>
+            <span class="time">⏱ ${time}ms</span>
+        </div>${typeof data === 'string' ? data : formatJson(data)}`;
+        document.getElementById(id).innerHTML = html;
+    }
+
+    function toggleHint(id) {
+        document.getElementById(id).classList.toggle('show');
+    }
+
+    function switchTab(ex, tab) {
+        document.querySelectorAll(`#tab${ex}-put, #tab${ex}-delete`).forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab${ex}-${tab}`).classList.add('active');
+        const btns = document.querySelectorAll(`.exercise-block.level-3:nth-of-type(1) .tab-btn`);
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            if (b.textContent.toLowerCase().includes(tab)) b.classList.add('active');
+            else if (b.closest('.exercise-block') === document.getElementById(`tab${ex}-${tab}`).closest('.exercise-block'))
+                b.classList.remove('active');
+        });
+        // Simple tab switch
+        const parent = document.getElementById(`tab${ex}-${tab}`).parentElement;
+        parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab${ex}-${tab}`).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // ══════════════════════════════════════
+    // EJERCICIO 1
+    // ══════════════════════════════════════
+    async function ejercicio1() {
+        showLoading('res1');
+        const start = Date.now();
+        try {
+            const res = await fetch('https://jsonplaceholder.typicode.com/users/1');
+            const data = await res.json();
+            showResponse('res1', res.status, Date.now()-start, data);
+            document.getElementById('q1-block').style.display = 'block';
+            window._user1 = data;
+        } catch(e) {
+            document.getElementById('res1').innerHTML = `<span style="color:#ff6b6b">Error: ${e.message}</span>`;
+        }
+    }
+
+    function verificar1() {
+        const ans = document.getElementById('q1-answer').value.trim().toLowerCase();
+        const fb = document.getElementById('q1-feedback');
+        if (ans === 'leanne graham') {
+            fb.className = 'feedback correct';
+            fb.textContent = '✅ ¡Correcto! Leanne Graham es el usuario #1.';
+            if (!completed.e1) { addScore(10); completed.e1 = true; }
+            document.getElementById('complete1').classList.add('show');
+        } else {
+            fb.className = 'feedback incorrect';
+            fb.textContent = '❌ Revisa el campo "name" en la respuesta JSON.';
+        }
+    }
+
+    // ══════════════════════════════════════
+    // EJERCICIO 2
+    // ══════════════════════════════════════
+    async function ejercicio2() {
+        showLoading('res2');
+        const endpoint = document.getElementById('endpoint2').value;
+        const start = Date.now();
+        try {
+            const res = await fetch(`https://jsonplaceholder.typicode.com/${endpoint}`);
+            const data = await res.json();
+            const display = Array.isArray(data)
+                ? `// Array con ${data.length} elementos\n${formatJson(data.slice(0, 3))}\n// ... (${data.length - 3} más)`
+                : formatJson(data);
+            showResponse('res2', res.status, Date.now()-start, display);
+            e2calls++;
+            if (e2calls >= 2) document.getElementById('q2-block').style.display = 'block';
+        } catch(e) {
+            document.getElementById('res2').innerHTML = `<span style="color:#ff6b6b">Error: ${e.message}</span>`;
+        }
+    }
+
+    function verificar2() {
+        const ans = document.querySelector('input[name="q2"]:checked');
+        const fb = document.getElementById('q2-feedback');
+        if (ans && ans.value === 'b') {
+            fb.className = 'feedback correct';
+            fb.textContent = '✅ ¡Exacto! Sin ID devuelve una lista (array []), con /ID devuelve un objeto específico {}.';
+            if (!completed.e2) { addScore(15); completed.e2 = true; }
+            document.getElementById('complete2').classList.add('show');
+        } else {
+            fb.className = 'feedback incorrect';
+            fb.textContent = '❌ Fíjate: ¿la respuesta empieza con [ ] o con { }?';
+        }
+    }
+
+    // ══════════════════════════════════════
+    // EJERCICIO 3
+    // ══════════════════════════════════════
+    function buildUrl3() {
+        const resource = document.getElementById('resource3').value;
+        const filter = document.getElementById('filter3').value;
+        let url = `https://jsonplaceholder.typicode.com/${resource}`;
+        if (filter) url += `?userId=${filter}`;
+        document.getElementById('url3').textContent = url;
+    }
+
+    async function ejercicio3() {
+        showLoading('res3');
+        const url = document.getElementById('url3').textContent;
+        const start = Date.now();
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            const display = Array.isArray(data)
+                ? `// Resultados: ${data.length} elementos\n${formatJson(data.slice(0, 3))}\n// ... (total: ${data.length})`
+                : formatJson(data);
+            showResponse('res3', res.status, Date.now()-start, display);
+            document.getElementById('q3-block').style.display = 'block';
+        } catch(e) {
+            document.getElementById('res3').innerHTML = `<span style="color:#ff6b6b">Error: ${e.message}</span>`;
+        }
+    }
+
+    function verificar3() {
+        const ans = document.getElementById('q3-answer').value.trim();
+        const fb = document.getElementById('q3-feedback');
+        if (ans === '10') {
+            fb.className = 'feedback correct';
+            fb.textContent = '✅ ¡Correcto! El usuario 1 tiene exactamente 10 posts.';
+            if (!completed.e3) { addScore(20); completed.e3 = true; }
+            document.getElementById('complete3').classList.add('show');
+        } else {
+            fb.className = 'feedback incorrect';
+            fb.textContent = '❌ Filtra por userId=1 en posts y cuenta los "Resultados: X elementos".';
+        }
+    }
+
+    // ══════════════════════════════════════
+    // EJERCICIO 4
+    // ══════════════════════════════════════
+    async function ejercicio4() {
+        const title = document.getElementById('post-title').value.trim();
+        const body = document.getElementById('post-body').value.trim();
+        const userId = document.getElementById('post-userid').value.trim();
+        if (!title || !body || !userId) {
+            document.getElementById('res4').innerHTML = '<span style="color:#ffd93d">⚠️ Completa todos los campos del formulario.</span>';
+            return;
+        }
+        showLoading('res4');
+        const start = Date.now();
+        try {
+            const res = await fetch('https://jsonplaceholder.typicode.com/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, body, userId: Number(userId) })
+            });
+            const data = await res.json();
+            showResponse('res4', res.status, Date.now()-start, data);
+            document.getElementById('q4-block').style.display = 'block';
+        } catch(e) {
+            document.getElementById('res4').innerHTML = `<span style="color:#ff6b6b">Error: ${e.message}</span>`;
+        }
+    }
+
+    function verificar4() {
+        const ans = document.querySelector('input[name="q4"]:checked');
+        const fb = document.getElementById('q4-feedback');
+        if (ans && ans.value === 'b') {
+            fb.className = 'feedback correct';
+            fb.textContent = '✅ ¡Correcto! 201 Created indica que el recurso fue creado exitosamente.';
+            if (!completed.e4) { addScore(25); completed.e4 = true; }
+            document.getElementById('complete4').classList.add('show');
+        } else {
+            fb.className = 'feedback incorrect';
+            fb.textContent = '❌ Revisa el "Status:" en la respuesta de arriba.';
+        }
+    }
+
+    // ══════════════════════════════════════
+    // EJERCICIO 5
+    // ══════════════════════════════════════
+    async function ejercicio5put() {
+        const title = document.getElementById('put-title').value.trim();
+        if (!title) {
+            document.getElementById('res5put').innerHTML = '<span style="color:#ffd93d">⚠️ Escribe un título nuevo.</span>';
+            return;
+        }
+        showLoading('res5put');
+        const start = Date.now();
+        try {
+            const res = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: 1, title, body: 'Contenido actualizado', userId: 1 })
+            });
+            const data = await res.json();
+            showResponse('res5put', res.status, Date.now()-start, data);
+            e5did.put = true;
+            if (e5did.put && e5did.del) document.getElementById('q5-block').style.display = 'block';
+        } catch(e) {
+            document.getElementById('res5put').innerHTML = `<span style="color:#ff6b6b">Error: ${e.message}</span>`;
+        }
+    }
+
+    async function ejercicio5delete() {
+        showLoading('res5del');
+        const start = Date.now();
+        try {
+            const res = await fetch('https://jsonplaceholder.typicode.com/posts/1', { method: 'DELETE' });
+            const data = await res.json();
+            showResponse('res5del', res.status, Date.now()-start, data);
+            e5did.del = true;
+            if (e5did.put && e5did.del) document.getElementById('q5-block').style.display = 'block';
+        } catch(e) {
+            document.getElementById('res5del').innerHTML = `<span style="color:#ff6b6b">Error: ${e.message}</span>`;
+        }
+    }
+
+    function verificar5() {
+        const ans = document.querySelector('input[name="q5"]:checked');
+        const fb = document.getElementById('q5-feedback');
+        if (ans && ans.value === 'a') {
+            fb.className = 'feedback correct';
+            fb.textContent = '✅ ¡Correcto! PUT devuelve el recurso modificado, DELETE devuelve un cuerpo vacío {}.';
+            if (!completed.e5) { addScore(30); completed.e5 = true; }
+            document.getElementById('complete5').classList.add('show');
+        } else {
+            fb.className = 'feedback incorrect';
+            fb.textContent = '❌ Compara ambas respuestas: ¿qué devuelve cada una?';
+        }
+    }
+
+    // ══════════════════════════════════════
+    // EJERCICIO 6
+    // ══════════════════════════════════════
+    async function ejercicio6() {
+        showLoading('res6');
+        const opt = document.getElementById('error-url').value;
+        const urls = {
+            'ok': 'https://jsonplaceholder.typicode.com/users/1',
+            'notfound': 'https://jsonplaceholder.typicode.com/users/99999',
+            'invalid': 'https://httpstat.us/400',
+            'unauth': 'https://httpstat.us/401',
+            'server': 'https://httpstat.us/500'
+        };
+        const start = Date.now();
+        try {
+            const res = await fetch(urls[opt]);
+            let data;
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('json')) {
+                data = await res.json();
+            } else {
+                data = await res.text();
+            }
+            const elapsed = Date.now()-start;
+            const explanation = {
+                200: '✅ Éxito: el servidor procesó correctamente la solicitud.',
+                400: '❌ Bad Request: el servidor no pudo entender la solicitud (error del cliente).',
+                401: '🔒 Unauthorized: necesitas autenticación para acceder.',
+                404: '🔍 Not Found: el recurso solicitado no existe en el servidor.',
+                500: '💥 Internal Server Error: algo falló dentro del servidor.'
+            };
+            const info = explanation[res.status] || '';
+            const display = typeof data === 'object'
+                ? formatJson(data)
+                : `"${data}"`;
+            document.getElementById('res6').innerHTML = `<div class="status-line">
+                <span class="status-code ${statusClass(res.status)}">Status: ${res.status}</span>
+                <span class="time">⏱ ${elapsed}ms</span>
+            </div><div style="color:#ffd93d;margin-bottom:10px;">${info}</div>${display}`;
+            e6calls++;
+            if (e6calls >= 2) document.getElementById('q6-block').style.display = 'block';
+        } catch(e) {
+            document.getElementById('res6').innerHTML = `<span style="color:#ff6b6b">Error de red: ${e.message}<br>Esto pasa cuando el servidor no responde o hay un problema de CORS.</span>`;
+            e6calls++;
+            if (e6calls >= 2) document.getElementById('q6-block').style.display = 'block';
+        }
+    }
+
+    function verificar6() {
+        const ans = document.querySelector('input[name="q6"]:checked');
+        const fb = document.getElementById('q6-feedback');
+        if (ans && ans.value === 'b') {
+            fb.className = 'feedback correct';
+            fb.textContent = '✅ ¡Correcto! 4xx = error del cliente (mala URL, sin permisos, etc). 5xx = error del servidor.';
+            if (!completed.e6) { addScore(30); completed.e6 = true; }
+            document.getElementById('complete6').classList.add('show');
+        } else {
+            fb.className = 'feedback incorrect';
+            fb.textContent = '❌ Recuerda: 4xx es culpa del cliente, 5xx es culpa del servidor.';
+        }
+    }
+
+    // ══════════════════════════════════════
+    // EJERCICIO BOSS
+    // ══════════════════════════════════════
+    document.getElementById('boss-method').addEventListener('change', updateBossBadge);
+    document.getElementById('boss-url').addEventListener('input', function() {
+        document.getElementById('boss-url-display').textContent = this.value;
+    });
+
+    function updateBossBadge() {
+        const method = document.getElementById('boss-method').value;
+        const badge = document.getElementById('boss-badge');
+        badge.textContent = method;
+        badge.className = `method-badge ${method.toLowerCase()}`;
+    }
+
+    async function ejercicioBoss() {
+        const method = document.getElementById('boss-method').value;
+        const url = document.getElementById('boss-url').value.trim();
+        const bodyText = document.getElementById('boss-body').value.trim();
+
+        if (!url) {
+            document.getElementById('resBoss').innerHTML = '<span style="color:#ffd93d">⚠️ Escribe una URL.</span>';
+            return;
+        }
+
+        showLoading('resBoss');
+        const start = Date.now();
+        const options = { method };
+        if ((method === 'POST' || method === 'PUT') && bodyText) {
+            options.headers = { 'Content-Type': 'application/json' };
+            options.body = bodyText;
+        }
+
+        try {
+            const res = await fetch(url, options);
+            let data;
+            const ct = res.headers.get('content-type') || '';
+            if (ct.includes('json')) {
+                data = await res.json();
+            } else {
+                data = await res.text();
+            }
+            showResponse('resBoss', res.status, Date.now()-start,
+                typeof data === 'object' ? data : `"${data}"`);
+
+            // Check missions
+            const lower = url.toLowerCase();
+            if (method === 'GET' && lower.includes('/posts') && !lower.includes('/posts/') && res.ok) {
+                bossMissions.m1 = true;
+                document.getElementById('m1').textContent = '✅';
+                document.getElementById('m1').style.color = '#6bcb77';
+            }
+            if (method === 'POST' && lower.includes('/comments') && res.status === 201) {
+                bossMissions.m2 = true;
+                document.getElementById('m2').textContent = '✅';
+                document.getElementById('m2').style.color = '#6bcb77';
+            }
+            if (method === 'PUT' && lower.includes('/todos/1') && res.ok) {
+                bossMissions.m3 = true;
+                document.getElementById('m3').textContent = '✅';
+                document.getElementById('m3').style.color = '#6bcb77';
+            }
+
+            if (bossMissions.m1 && bossMissions.m2 && bossMissions.m3) {
+                if (!completed.eBoss) { addScore(50); completed.eBoss = true; }
+                document.getElementById('completeBoss').classList.add('show');
+            }
+        } catch(e) {
+            document.getElementById('resBoss').innerHTML = `<span style="color:#ff6b6b">Error: ${e.message}</span>`;
+        }
+    }
+
+    // ── Tab switching fix ──
+    function switchTab(ex, tab) {
+        const block = document.getElementById(`tab${ex}-${tab}`).closest('.exercise-block');
+        block.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        block.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab${ex}-${tab}`).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // ── Smooth scroll ──
+    document.querySelectorAll('nav a').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            document.querySelector(link.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+</script>
+
+</body>
+</html>
