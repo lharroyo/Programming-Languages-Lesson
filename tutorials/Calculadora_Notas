@@ -1,0 +1,95 @@
+class Componente:
+    """Representa un componente de evaluación con nombre, peso y notas."""
+
+    def __init__(self, nombre, peso, cantidad_notas=1):
+        self.nombre = nombre
+        self.peso = peso
+        self.cantidad_notas = cantidad_notas
+        self.notas = []
+
+    def ingresar_notas(self):
+        if self.cantidad_notas == 1:
+            nota = Componente._pedir_nota(f"Ingrese la nota de {self.nombre}: ")
+            self.notas.append(nota)
+        else:
+            print(f"\n--- {self.nombre} ---")
+            for i in range(1, self.cantidad_notas + 1):
+                nota = Componente._pedir_nota(f"Ingrese la nota del {self.nombre} {i}: ")
+                self.notas.append(nota)
+
+    def promedio(self):
+        return sum(self.notas) / len(self.notas) if self.notas else 0
+
+    def nota_ponderada(self):
+        return self.promedio() * self.peso
+
+    @staticmethod
+    def _pedir_nota(mensaje):
+        while True:
+            try:
+                nota = float(input(mensaje))
+                if 1 <= nota <= 5:
+                    return nota
+                print("La nota debe estar entre 1 y 5.")
+            except ValueError:
+                print("Ingrese un valor numérico válido.")
+
+
+class CalculadoraNotas:
+    """Sistema de cálculo de notas con múltiples componentes."""
+
+    def __init__(self):
+        self.componentes = []
+
+    def agregar_componente(self, nombre, peso, cantidad_notas=1):
+        self.componentes.append(Componente(nombre, peso, cantidad_notas))
+
+    def ingresar_todas_las_notas(self):
+        print("=" * 40)
+        print("   SISTEMA DE CÁLCULO DE NOTAS")
+        print("=" * 40)
+        for componente in self.componentes:
+            componente.ingresar_notas()
+
+    def nota_acumulada(self):
+        return sum(c.nota_ponderada() for c in self.componentes)
+
+    def peso_total(self):
+        return sum(c.peso for c in self.componentes)
+
+    def nota_definitiva(self):
+        peso = self.peso_total()
+        return self.nota_acumulada() / peso if peso > 0 else 0
+
+    def mostrar_resultados(self):
+        print("\n" + "=" * 40)
+        print("           RESULTADOS")
+        print("=" * 40)
+        for c in self.componentes:
+            peso_pct = int(c.peso * 100)
+            etiqueta = f"{c.nombre}"
+            if c.cantidad_notas > 1:
+                etiqueta += " (promedio)"
+            print(f"{etiqueta:<22} {c.promedio():.2f} x {peso_pct}%  = {c.nota_ponderada():.2f}")
+        print("-" * 40)
+
+        peso_pct_total = int(self.peso_total() * 100)
+        max_acumulado = 5 * self.peso_total()
+        print(f"Nota acumulada ({peso_pct_total}%): {self.nota_acumulada():.2f} / {max_acumulado:.2f}")
+        print("=" * 40)
+
+        definitiva = self.nota_definitiva()
+        estado = "APROBADO" if definitiva >= 3.0 else "REPROBADO"
+        print(f"\n>>> NOTA DEFINITIVA: {definitiva:.2f} / 5.00 <<<")
+        print(f"    Estado: {estado}")
+        print("=" * 40)
+
+
+if __name__ == "__main__":
+    calculadora = CalculadoraNotas()
+    calculadora.agregar_componente("Parcial", 0.08)
+    calculadora.agregar_componente("Taller", 0.12, cantidad_notas=2)
+    calculadora.agregar_componente("Proyecto Integrador", 0.10)
+
+    calculadora.ingresar_todas_las_notas()
+    calculadora.mostrar_resultados()
